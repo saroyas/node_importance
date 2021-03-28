@@ -7,9 +7,95 @@ import python.tools as tl
 import copy
 import random
 
+def get_page_space_ranks(graph, self_loop_weight = 1, with_rounding = False,
+                         min_iter = 1000, print_rate = 100, max_iter = 10000,
+                         cut_off_change = 1):
+
+    fspace = {}
+    for node in graph.nodes():
+        fspace[node] = 1
+
+    norm_const = {}
+    for node in graph.nodes():
+        node_in_weight = graph.in_degree(node, weight = "weight")
+        norm_const[node] = 1/(node_in_weight + self_loop_weight)
 
 
-def get_space_ranks(graph, self_edge_weight = 1, with_rounding = False, min_iter = 1000, print_rate = 100, max_iter = 10000):
+    #calculating what each nodes page will look like
+    i = 0
+    while True:
+        i = i+1
+        change = 0
+        for node in graph.nodes():
+            sum_normed_succ_fspace = 0
+            for successor in graph.successors(node):
+                sum_normed_succ_fspace = sum_normed_succ_fspace + norm_const[successor]*fspace[successor]*graph.get_edge_data(node, successor)["weight"]
+
+            new_fspace_node = 1 + sum_normed_succ_fspace
+            change = change + fspace[node] - new_fspace_node
+            fspace[node] = new_fspace_node
+
+        if i%print_rate == 0:
+            print("Currently finished iteration ", i)
+            print("Change in this iteration", change)
+
+        if (i>max_iter) or (i>min_iter and abs(change) < cut_off_change):
+            print("stopped at iteration:", i)
+            break
+
+    return fspace
+
+
+
+def get_space_ranks(graph, self_loop_weight = 1, with_rounding = False,
+                        min_iter = 1000, print_rate = 100, max_iter = 10000,
+                        cut_off_change = 1):
+
+    fspace = {}
+    for node in graph.nodes():
+        fspace[node] = 1
+
+    norm_const = {}
+    for node in graph.nodes():
+        node_in_weight = graph.in_degree(node, weight = "weight")
+        norm_const[node] = 1/(node_in_weight + self_loop_weight)
+
+
+    #calculating what each nodes page will look like
+    i = 0
+    while True:
+        i = i+1
+        change = 0
+        for node in graph.nodes():
+            sum_normed_succ_fspace = 0
+            for successor in graph.successors(node):
+                sum_normed_succ_fspace = sum_normed_succ_fspace + norm_const[successor]*fspace[successor]*graph.get_edge_data(node, successor)["weight"]
+
+            new_fspace_node = 1 + sum_normed_succ_fspace
+            change = change + fspace[node] - new_fspace_node
+            fspace[node] = new_fspace_node
+
+        if i%print_rate == 0:
+            print("Currently finished iteration ", i)
+            print("Change in this iteration", change)
+
+        if (i>max_iter) or (i>min_iter and abs(change) < cut_off_change):
+            print("stopped at iteration:", i)
+            break
+
+    space_ranking = {}
+    for node in graph.nodes():
+        space_ranking[node] = self_loop_weight * norm_const[node] * fspace[node]
+
+    return space_ranking
+
+
+
+
+
+def get_space_ranks_dict_old(graph, self_edge_weight = 1, with_rounding = False,
+                    min_iter = 1000, print_rate = 100, max_iter = 10000,
+                    cut_off_change = 1):
     #intialise dictionary
     # this creates potential issues - are the orders the same in both results???:
     node_page = {}
@@ -29,21 +115,31 @@ def get_space_ranks(graph, self_edge_weight = 1, with_rounding = False, min_iter
             new_page_draft[node] = norm_const
 
             #for each superior node - node that is predecessor
-            for superior in list(graph.predecessors(node)):
+            list_superiors = list(graph.predecessors(node))
+
+            for superior in list_superiors:
                 #get the weight of the superiors influence
-                edge_weight = graph.get_edge_data(superior, node)["weight"]
+                try:
+                    edge_weight = graph.get_edge_data(superior, node)["weight"]
+                except:
+                    edge_weight = 1
 
                 #add weight time its page(dictionary) to the current nodes dictionary
                 for entry in node_page[superior].keys():
                     new_page_draft[entry] = new_page_draft.get(entry, 0) + edge_weight*(norm_const)*node_page[superior][entry]
 
+            for entry in node_page[node].keys():
+                change = change + new_page_draft[entry] - node_page[node].get(entry,0)
+
+
             node_page[node] = new_page_draft
 
         if i%print_rate == 0:
-            print("Currently at iteration ", i)
+            print("Currently finished iteration ", i)
+            print("Change in this iteration", change)
 
-        if (i>max_iter): # (i>min_iter and abs(change) < 1) or (i>max_iter):
-            #print("stopped at iteration:", i)
+        if (i>max_iter) or (i>min_iter and abs(change) < cut_off_change):
+            print("stopped at iteration:", i)
             break
 
     ranking = {}
@@ -55,7 +151,7 @@ def get_space_ranks(graph, self_edge_weight = 1, with_rounding = False, min_iter
     return ranking
 
 
-def get_space_ranks_old(graph, self_edge_weight = 1, with_rounding = False, min_iter = 1000, print_rate = 100, max_iter = 10000):
+def get_space_ranks_list_old(graph, self_edge_weight = 1, with_rounding = False, min_iter = 1000, print_rate = 100, max_iter = 10000):
     #intialise dictionary
     # this creates potential issues - are the orders the same in both results???:
     node_page = {}
