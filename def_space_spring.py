@@ -7,31 +7,30 @@ import python.tools as tl
 import copy
 import random
 
-def get_page_space_ranks(graph, self_loop_weight = 1, with_rounding = False,
-                         min_iter = 1000, print_rate = 100, max_iter = 10000,
-                         cut_off_change = 1):
+def generalised_page_rank(graph, self_loop_weight = 0, alpha = 1, min_iter = 1000,
+                          page_size = 0, end_normalise = False, print_rate = 100, max_iter = 10000,
+                          cut_off_change = 0.000001):
 
     fspace = {}
     for node in graph.nodes():
-        fspace[node] = 1
+        fspace[node] = 1/(graph.number_of_nodes())
 
     norm_const = {}
     for node in graph.nodes():
-        node_in_weight = graph.in_degree(node, weight = "weight")
-        norm_const[node] = 1/(node_in_weight + self_loop_weight)
+        node_out_weight = graph.out_degree(node, weight = "weight")
+        norm_const[node] = 1/(node_out_weight + self_loop_weight)
 
-
-    #calculating what each nodes page will look like
     i = 0
     while True:
         i = i+1
         change = 0
         for node in graph.nodes():
-            sum_normed_succ_fspace = 0
-            for successor in graph.successors(node):
-                sum_normed_succ_fspace = sum_normed_succ_fspace + norm_const[successor]*fspace[successor]*graph.get_edge_data(node, successor)["weight"]
+            sum_normed_pred_fspace = 0
+            for pred in graph.predecessors(node):
+                sum_normed_pred_fspace = sum_normed_pred_fspace + norm_const[pred]*fspace[pred]*graph.get_edge_data(pred, node)["weight"]
 
-            new_fspace_node = 1 + sum_normed_succ_fspace
+
+            new_fspace_node = page_size + alpha*(sum_normed_pred_fspace) + (1-alpha)/(graph.number_of_nodes())
             change = change + fspace[node] - new_fspace_node
             fspace[node] = new_fspace_node
 
@@ -43,7 +42,14 @@ def get_page_space_ranks(graph, self_loop_weight = 1, with_rounding = False,
             print("stopped at iteration:", i)
             break
 
-    return fspace
+    if end_normalise == True:
+        space_ranking = {}
+        for node in graph.nodes():
+            space_ranking[node] = self_loop_weight * norm_const[node] * fspace[node]
+
+        return space_ranking
+    else:
+        return fspace
 
 
 
