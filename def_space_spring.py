@@ -8,9 +8,22 @@ import copy
 import random
 
 def generalised_page_rank(graph, self_loop_weight = 0, alpha = 0.85,
-                                   page_size = 0, end_normalise = False, arrow_dir_powerful = False,
-                                   min_iter = 1000, print_rate = 100, max_iter = 10000,
-                                   cut_off_change = 0.000001):
+                           page_size = 0, end_normalise = False, arrow_dir_powerful = False,
+                           backflow = False, backflow_const = 0,
+                           min_iter = 1000, print_rate = 100, max_iter = 10000,
+                           cut_off_change = 0.000001):
+
+
+    if backflow == True:
+        DG_backflow = graph.copy()
+        for edge in graph.edges():
+            backflow_edge_weight = backflow_const * graph[edge[0]][edge[1]]['weight']
+            DG_backflow.add_edge(edge[1], edge[0], weight=backflow_edge_weight)
+
+        graph = DG_backflow
+
+
+
     fspace = {}
     for node in graph.nodes():
         fspace[node] = 1/(graph.number_of_nodes())
