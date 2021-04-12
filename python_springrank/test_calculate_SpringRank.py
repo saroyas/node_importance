@@ -7,8 +7,8 @@ From a given network, it extracts the SpringRank scores
 
 import networkx as nx
 import numpy as np
-from python.SpringRank import SpringRank
-import python.tools as tl
+from python_springrank.SpringRank import SpringRank
+import python_springrank.tools as tl
 
 network='US_CS'
 

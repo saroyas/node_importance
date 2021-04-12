@@ -2,23 +2,28 @@ import networkx as nx
 from operator import add, sub
 import numpy as np
 import matplotlib.pyplot as plt
-from python.SpringRank import SpringRank
-import python.tools as tl
+from python_springrank.SpringRank import SpringRank
+import python_springrank.tools as tl
 import copy
 import random
 
-def generalised_page_rank(graph, self_loop_weight = 0, alpha = 0.85,
-                           page_size = 0, end_normalise = False, arrow_dir_powerful = False,
-                           backflow = False, backflow_const = 0,
-                           min_iter = 1000, print_rate = 100, max_iter = 10000,
-                           cut_off_change = 0.000001):
+def generalised_post_rank(graph, self_loop_weight = 0, alpha = 0.85,
+                          self_flow = 0, end_normalise = False, arrow_dir_powerful = False,
+                          backflow = False, backflow_const = 0,
+                          min_iter = 1000, print_rate = 100, max_iter = 10000,
+                          cut_off_change = 0.000001, print_stuff=True):
 
+
+    #this version of PostRank is such that we can, by setting parameters, turn it into PageRank
 
     if backflow == True:
         DG_backflow = graph.copy()
         for edge in graph.edges():
             backflow_edge_weight = backflow_const * graph[edge[0]][edge[1]]['weight']
-            DG_backflow.add_edge(edge[1], edge[0], weight=backflow_edge_weight)
+            if DG_backflow.has_edge(edge[1], edge[0]):
+                DG_backflow[edge[1]][edge[0]]['weight'] += backflow_edge_weight
+            else:
+                DG_backflow.add_edge(edge[1], edge[0], weight=backflow_edge_weight)
 
         graph = DG_backflow
 
@@ -26,7 +31,7 @@ def generalised_page_rank(graph, self_loop_weight = 0, alpha = 0.85,
 
     fspace = {}
     for node in graph.nodes():
-        fspace[node] = 1/(graph.number_of_nodes())
+        fspace[node] = 1  #'/(graph.number_of_nodes())
 
     norm_const = {}
     for node in graph.nodes():
@@ -53,16 +58,17 @@ def generalised_page_rank(graph, self_loop_weight = 0, alpha = 0.85,
                 for succ in graph.successors(node):
                     sum_normed_follower_fspace = sum_normed_follower_fspace + norm_const[succ]*fspace[succ]*graph.get_edge_data(node, succ)["weight"]
 
-            new_fspace_node = page_size + alpha*(sum_normed_follower_fspace) + (1-alpha)/(graph.number_of_nodes())
+            new_fspace_node = self_flow + alpha * (sum_normed_follower_fspace) + (1 - alpha) / (graph.number_of_nodes())
             change = change + fspace[node] - new_fspace_node
             fspace[node] = new_fspace_node
 
-        if i%print_rate == 0:
+        if i%print_rate == 0 and (print_stuff == True):
             print("Currently finished iteration ", i)
             print("Change in this iteration", change)
 
-        if (i>max_iter) or (i>min_iter and abs(change) < cut_off_change):
-            print("stopped at iteration:", i)
+        if ((i>max_iter) or (i>min_iter and abs(change) < cut_off_change)):
+            if print_stuff == True:
+                print("stopped at iteration:", i)
             break
 
     if end_normalise == True:
@@ -75,10 +81,13 @@ def generalised_page_rank(graph, self_loop_weight = 0, alpha = 0.85,
         return fspace
 
 
+generalised_page_rank = generalised_post_rank
 
-def get_space_ranks(graph, self_loop_weight = 1, with_rounding = False,
-                        min_iter = 1000, print_rate = 100, max_iter = 10000,
-                        cut_off_change = 1):
+
+
+def get_post_ranks(graph, self_loop_weight = 1, with_rounding = False,
+                   min_iter = 1000, print_rate = 100, max_iter = 10000,
+                   cut_off_change = 1):
 
     fspace = {}
     for node in graph.nodes():

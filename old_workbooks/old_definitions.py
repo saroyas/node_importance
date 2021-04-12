@@ -2,8 +2,8 @@ import networkx as nx
 from operator import add, sub
 import numpy as np
 import matplotlib.pyplot as plt
-from python.SpringRank import SpringRank
-import python.tools as tl
+from python_springrank.SpringRank import SpringRank
+import python_springrank.tools as tl
 import copy
 import random
 
